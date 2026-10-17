@@ -15,7 +15,20 @@ const legPx=l=>l.type==='book'?`${l.am||amer(l.dec)} (${(l.dec||0).toFixed(3)})`
 const sf=x=>S.sport==='all'||x.sport===S.sport;
 const empty=(t,b)=>`<div class="empty"><b>${esc(t)}</b>${b||''}</div>`;
 async function load(){const f=n=>fetch('data/'+n+'?t='+Date.now()).then(r=>r.ok?r.json():null).catch(()=>null);
- [D.m,D.a,D.p,D.o,D.meta,D.e]=await Promise.all(['markets.json','arbs.json','promos.json','overlap.json','meta.json','edges.json'].map(f));D.e=D.e||null;route()}
+ [D.m,D.a,D.p,D.o,D.meta,D.e]=await Promise.all(['markets.json','arbs.json','promos.json','overlap.json','meta.json','edges.json'].map(f));D.e=D.e||null;cleanArbs();route()}
+/* Honesty filter: an arb needs 3+ venues on the game, and no leg may rest on a lone outlier price
+   (a venue whose no-vig price for that side sits well off every other venue (log-odds gap 0.3+ vs the median, none within 0.15)). */
+function cleanArbs(){const byId={};(D.m.games||[]).forEach(g=>byId[g.id]=g);
+ const med=a=>{const s=[...a].sort((x,y)=>x-y),m=s.length>>1;return s.length%2?s[m]:(s[m-1]+s[m])/2};
+ const ok=a=>{const g=byId[a.id];if(!g)return false;const V=g.venues||{};if(Object.keys(V).length<3)return false;
+  return a.legs.every(l=>{const me=V[l.venue];const others=Object.entries(V).filter(([k])=>k!==l.venue).map(([,x])=>x[l.side]).filter(x=>x!=null);
+   if(!me||me[l.side]==null||others.length<2)return false;const p=me[l.side];
+   const lg=x=>Math.log(Math.min(Math.max(x,1e-4),1-1e-4)/(1-Math.min(Math.max(x,1e-4),1-1e-4)));
+   return !(Math.abs(lg(p)-lg(med(others)))>=.3&&others.every(o=>Math.abs(lg(o)-lg(p))>=.15))})};
+ D.a.raw=D.a.arbs.length;D.a.arbs=D.a.arbs.filter(ok);D.a.near=(D.a.near||[]).filter(ok);
+ D.m.games=(D.m.games||[]).map(g=>Object.keys(g.venues||{}).length>=3?g:{...g,gap:0,thin:true})}
+const FREE_ARBS=2,isFree=()=>document.documentElement.getAttribute('data-sl-tier')==='free';
+const arbCount=n=>isFree()&&n>FREE_ARBS?`${FREE_ARBS} free · ${n-FREE_ARBS} with Pro`:String(n);
 function shell(){const cur=PAGES.find(p=>p[0]===S.page)||PAGES[0];
  $('#app').innerHTML=`<aside class="sidebar" id="sidebar"><div class="brand">${LOGO}<div><div class="brand-name">Arb Lab</div><div class="brand-sub">Arbs · Promos · Beta</div></div></div>
  <nav class="nav"><div class="nav-label">Scanner</div>${PAGES.slice(0,5).map(navb).join('')}<div class="nav-label">Promos</div>${PAGES.slice(5,7).map(navb).join('')}<div class="nav-label">More</div>${PAGES.slice(7).map(navb).join('')}
@@ -42,18 +55,18 @@ function arbCard(a,i,live){const T=S.bank,s=split(a,T);
  const capT=a.max_cost!=null?a.max_cost:null;
  return `<div class="arb ${live?'live':''}"><div class="arb-top"><div><h3>${esc(a.game)}</h3><div class="small muted">${esc(a.league)} · ${esc(et(a.start))} · ${esc((a.market||'moneyline').toLowerCase())}${a.fetched?' · odds pulled '+esc(ago(a.fetched)):''}${a.stale_snapshot?' <span class="chip w">snapshot too old to trust</span>':''}</div></div>
  <div style="text-align:right"><div class="big ${live?'pos':'warn'}">${live?'+'+pct(a.profit_pct,2):(a.sum*100).toFixed(2)+'¢'}</div><div class="small muted">${live?'locked return before rounding':a.sum<1?'per $1 payout; only ~'+Math.floor(a.max_units||0)+' contracts deep, so fee rounding erases it':'per $1 payout, '+pct(1/a.sum-1,2)+' if locked'}</div></div></div>
- <div class="legs">${s.legs.map(l=>`<div class="leg">${vchip(l.venue)} <b>${esc(l.label||l.team+' to win')}</b><div class="small muted">${esc(legPx(l))} · all-in ${(l.cost*100).toFixed(2)}¢ per $1 payout</div>
+ <div class="legs"${i<FREE_ARBS?' data-sl-public':''}>${s.legs.map(l=>`<div class="leg">${vchip(l.venue)} <b>${esc(l.label||l.team+' to win')}</b><div class="small muted">${esc(legPx(l))} · all-in ${(l.cost*100).toFixed(2)}¢ per $1 payout</div>
   <div style="margin-top:6px">Stake <b class="mono" style="display:inline">${usd(l.stake)}</b>${l.units!=null?` <span class="small muted">≈ ${l.units.toFixed(1)} contracts, fee ${usd(l.fee)}</span>`:''}</div></div>`).join('')}</div>
  ${live?`<div class="range" style="margin-top:10px"><div><small>Total stake</small><b>${usd(T)}</b></div><div><small>Payout either way</small><b>${usd(s.P)}</b></div><div><small>Guaranteed range</small><b class="pos">${usd(s.profit-s.round)} to ${usd(s.profit)}</b></div>
  <div><small>Max size at quoted depth</small><b>${a.book_limited?'Book limit':''}${a.max_units!=null?`${a.book_limited?' / ':''}${Math.floor(a.max_units).toLocaleString()} ct`:''}</b><small>${a.max_cost!=null?`${usd(capT)} in, ${usd(a.max_profit)} locked`:'sportsbook limits apply'}</small></div></div>`:''}
- <div class="small muted" style="margin-top:8px">${a.tie_risk?'<span class="chip w">Tie risk</span> NFL ties settle differently by venue (Polymarket 50-50, sportsbooks usually void the moneyline). ':''}${a.book_limited?'<span class="chip w">Book leg</span> Book prices come from '+'${a.legs.some(l=>l.src==="ESPN")?"ESPN (DraftKings)":"The Odds API"}'+' and may have moved. ':''}Kalshi rounds each order\'s fee up to the cent.</div></div>`}
+ <div class="small muted" style="margin-top:8px">${a.tie_risk?'<span class="chip w">Tie risk</span> NFL ties settle differently by venue (Polymarket 50-50, sportsbooks usually void the moneyline). ':''}${a.book_limited?'<span class="chip w">Book leg</span> Book prices come from '+(a.legs.some(l=>l.src==="ESPN")?"ESPN (DraftKings)":"The Odds API")+' and may have moved. ':''}Kalshi rounds each order\'s fee up to the cent.</div></div>`}
 /* ---------- pages ---------- */
 function overview(){const G=D.m.games.filter(sf),A=D.a.arbs.filter(sf),N=D.a.near.filter(sf);
  const venues=new Set();G.forEach(g=>Object.keys(g.venues).forEach(v=>venues.add(v)));
- const gaps=[...G].filter(g=>Object.keys(g.venues).length>1).sort((a,b)=>b.gap-a.gap).slice(0,6);
+ const gaps=[...G].filter(g=>Object.keys(g.venues).length>=3).sort((a,b)=>b.gap-a.gap).slice(0,6);
  const src=D.meta.sources;
  return `${sportSel()}<div class="grid kpis"><div class="card kpi"><div class="kpi-label">Games matched</div><div class="kpi-value">${G.length}</div><div class="kpi-delta">${G.filter(g=>Object.keys(g.venues).length>=3).length} on 3 venues</div></div>
- <div class="card kpi"><div class="kpi-label">Live arbs (after fees)</div><div class="kpi-value ${A.length?'pos':''}">${A.length}</div><div class="kpi-delta">${A.length?'best +'+pct(A[0].profit_pct,2):'none right now'}</div></div>
+ <div class="card kpi"><div class="kpi-label">Live arbs (after fees)</div><div class="kpi-value ${A.length?'pos':''}" style="${isFree()&&A.length>FREE_ARBS?'font-size:var(--t-md)':''}">${arbCount(A.length)}</div><div class="kpi-delta">${A.length?'best +'+pct(A[0].profit_pct,2):'none right now'}</div></div>
  <div class="card kpi"><div class="kpi-label">Biggest fair-prob gap</div><div class="kpi-value warn">${gaps[0]?pct(gaps[0].gap):'—'}</div><div class="kpi-delta">${gaps[0]?esc(gaps[0].away.abbr+' @ '+gaps[0].home.abbr):''}</div></div>
  <div class="card kpi"><div class="kpi-label">Promos found</div><div class="kpi-value">${D.p.promos.length}</div><div class="kpi-delta">${D.p.attempts.length} book pages checked</div></div></div>
  <div class="grid two" style="margin-top:16px"><div class="card"><div class="card-head"><h2>Top arbitrage</h2><a href="#arbs" class="sub">Open scanner →</a></div>
@@ -66,11 +79,11 @@ function gapRow(g){const v=g.venues,ks=Object.keys(v);return `<div style="margin
  <div class="small muted">${esc(g.home.abbr)} win probability, no-vig</div></div>`}
 function compare(){const G=D.m.games.filter(sf);if(!G.length)return sportSel()+empty('No upcoming games found for this sport','');
  const q=ls.get('q','');
- return `${sportSel()}<div class="note info">Fair probability removes the bookmaker's margin: each side's implied probability divided by the sum of both. For Kalshi and Polymarket we use the bid/ask midpoint, normalized. The gap is the spread between the highest and lowest venue for the home team.</div>
+ return `${sportSel()}<div class="note info">Fair probability removes the bookmaker's margin: each side's implied probability divided by the sum of both. A gap is only shown when 3 or more venues price the game. For Kalshi and Polymarket we use the bid/ask midpoint, normalized. The gap is the spread between the highest and lowest venue for the home team.</div>
  <div class="card"><div class="card-head"><h2>${G.length} games</h2><input class="inp" id="q" placeholder="Filter team…" value="${esc(q)}" style="width:180px"></div><div class="table-wrap"><table id="ct"><tr><th>Game</th><th>Start</th><th class="num">DK (no-vig)</th><th class="num">Kalshi</th><th class="num">Polymarket</th><th class="num">Gap</th><th>Prices (away / home)</th></tr>
  ${G.map(g=>{const v=g.venues,c=k=>v[k]?pct(v[k].home):'<span class="muted">—</span>';const lo=Math.min(...Object.values(v).map(x=>x.home)),hi=Math.max(...Object.values(v).map(x=>x.home));
  return `<tr data-t="${esc((g.name+' '+g.home.abbr+' '+g.away.abbr).toLowerCase())}"><td><b>${esc(g.away.abbr)} @ ${esc(g.home.abbr)}</b><div class="small muted">${esc(g.league)}</div></td><td class="small">${esc(et(g.start))}</td><td class="num">${c('DraftKings')}</td><td class="num">${c('Kalshi')}</td><td class="num">${c('Polymarket')}</td>
- <td class="num ${g.gap>=.03?'warn':''}">${Object.keys(v).length>1?pct(g.gap):'—'}</td><td class="small">${Object.entries(v).map(([k,x])=>`${vchip(k)}${x.kind==='book'?esc(x.away_px)+' / '+esc(x.home_px):(x.away_px!=null?Math.round(x.away_px*100)+'¢':'—')+' / '+(x.home_px!=null?Math.round(x.home_px*100)+'¢':'—')}`).join(' ')}
+ <td class="num ${g.gap>=.03&&!g.thin?'warn':''}">${Object.keys(v).length>=3?pct(g.gap):'<span class="small muted">needs 3+ books</span>'}</td><td class="small">${Object.entries(v).map(([k,x])=>`${vchip(k)}${x.kind==='book'?esc(x.away_px)+' / '+esc(x.home_px):(x.away_px!=null?Math.round(x.away_px*100)+'¢':'—')+' / '+(x.home_px!=null?Math.round(x.home_px*100)+'¢':'—')}`).join(' ')}
  ${g.links.kalshi?` <a href="${esc(g.links.kalshi)}" target="_blank" rel="noopener">Kalshi↗</a>`:''}${g.links.poly?` <a href="${esc(g.links.poly)}" target="_blank" rel="noopener">Poly↗</a>`:''}</td></tr>`}).join('')}</table></div>
  <p class="small muted">Home-team win probability shown. Exchange prices are the cost to buy that side (ask). ${esc(D.meta.fees.kalshi)}</p></div>`}
 AFTER.compare=()=>{const f=()=>{const v=$('#q').value.toLowerCase();ls.set('q',v);document.querySelectorAll('#ct tr[data-t]').forEach(r=>r.style.display=r.dataset.t.includes(v)?'':'none')};$('#q').oninput=f;f()};
@@ -79,7 +92,7 @@ function arbs(){let A=D.a.arbs.filter(sf);const N=D.a.near.filter(sf);
  return `${sportSel()}<div class="card" style="margin-bottom:14px"><div class="row"><label class="f">Total stake ($)<input class="inp" id="bank" type="number" min="1" value="${S.bank}"></label>
  <div class="seg"><button data-sort="profit" aria-pressed="${S.sort==='profit'}">Rank by profit %</button><button data-sort="volume" aria-pressed="${S.sort==='volume'}">Rank by max volume</button></div>
  <span class="small muted" style="flex:1;min-width:220px">Costs include taker fees: Kalshi 0.07×P×(1−P), Polymarket rate×p×(1−p) read per market. Max size walks the live order book until the combined price reaches $1.</span></div></div>
- ${A.length?A.map((a,i)=>arbCard(a,i,true)).join(''):empty('No guaranteed-profit combos right now','Every cross-venue pair costs at least $1 per $1 of payout after fees, so there is nothing to lock. Snapshot '+esc(ago(D.a.updated))+'.')}
+ ${A.length?`<h2 style="font-size:var(--t-md);margin:0 0 10px">${A.length} live arb${A.length===1?'':'s'}${isFree()&&A.length>FREE_ARBS?` <span class="small muted">· ${arbCount(A.length)}</span>`:''}</h2>`:''}${A.length?A.map((a,i)=>arbCard(a,i,true)).join(''):empty('No guaranteed-profit combos right now','Every cross-venue pair costs at least $1 per $1 of payout after fees, so there is nothing to lock. Snapshot '+esc(ago(D.a.updated))+'.')}
  <h2 style="font-size:var(--t-md);margin:22px 0 4px">Closest to an arb</h2><p class="small muted" style="margin:0 0 10px">These are <b>not</b> profitable. They show how close the market is, which is where an odds boost or a free bet can tip the result into a lock (see Promo Converter).</p>
  ${N.length?N.slice(0,8).map((a,i)=>arbCard(a,i,false)).join(''):empty('Nothing close','')}`}
 AFTER.arbs=()=>{$('#bank').onchange=e=>{S.bank=Math.max(1,+e.target.value||100);ls.set('bank',S.bank);route()};document.querySelectorAll('[data-sort]').forEach(b=>b.onclick=()=>{S.sort=b.dataset.sort;route()})};
