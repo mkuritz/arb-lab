@@ -28,6 +28,7 @@ function cleanArbs(){const byId={};(D.m.games||[]).forEach(g=>byId[g.id]=g);
  D.a.raw=D.a.arbs.length;D.a.arbs=D.a.arbs.filter(ok);D.a.near=(D.a.near||[]).filter(ok);
  D.m.games=(D.m.games||[]).map(g=>Object.keys(g.venues||{}).length>=3?g:{...g,gap:0,thin:true})}
 const FREE_ARBS=2,isFree=()=>document.documentElement.getAttribute('data-sl-tier')==='free';
+new MutationObserver(()=>{if(D.a&&typeof route==='function')route()}).observe(document.documentElement,{attributes:true,attributeFilter:['data-sl-tier']});   // re-count when the plan is known
 const arbCount=n=>isFree()&&n>FREE_ARBS?`${FREE_ARBS} free · ${n-FREE_ARBS} with Pro`:String(n);
 function shell(){const cur=PAGES.find(p=>p[0]===S.page)||PAGES[0];
  $('#app').innerHTML=`<aside class="sidebar" id="sidebar"><div class="brand">${LOGO}<div><div class="brand-name">Arb Lab</div><div class="brand-sub">Arbs · Promos · Beta</div></div></div>
