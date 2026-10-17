@@ -1,0 +1,15 @@
+{
+ "generated": "2026-10-12T17:39:31-04:00",
+ "seasons": {
+  "nfl": 2026,
+  "mlb": 2026,
+  "nhl": 20262027
+ },
+ "checked": 0,
+ "conflicts": [],
+ "unverified": [],
+ "stale": [],
+ "notes": [
+  "arb-lab prices markets only (no rosters); freshness check only"
+ ]
+}
