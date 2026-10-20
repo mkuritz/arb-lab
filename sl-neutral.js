@@ -4,7 +4,7 @@
 (function(){
 if(window.__slNeutral)return;window.__slNeutral=1;
 var DRAFT=/\b(draft|round|overall|lottery|first[- ]round|second[- ]round|\d+(st|nd|rd|th)[- ]round|top[- ]\d+|No\.\s*\d+)\s+picks?\b/i;
-var GMHUB=/^(cubs|orioles|redsox|eagles)\./.test(location.hostname);
+var GMHUB=/^(cubs|orioles|redsox|eagles|frontoffice|hoops)\./.test(location.hostname);
 var BOOKS=[["DraftKings Sportsbook","DraftKings"],["FanDuel Sportsbook","FanDuel"],["BetMGM"],["Caesars Sportsbook","Caesars"],["Fanatics Sportsbook","Fanatics"],["ESPNBet","ESPN Bet","ESPN BET"],["theScore Bet"],["bet365"],["BetRivers"],["Hard Rock Bet","Hard Rock"],["PointsBet"],["Fliff"],["Bovada"],["BetOnline.ag","BetOnline"],["betPARX"],["Bally Bet"],["LowVig.ag","LowVig"],["Circa Sports","Circa"],["Unibet"],["WynnBET"],["Borgata"],["PrizePicks"],["Underdog Fantasy"],["SuperDraft"],["Sleeper Picks"]];
 var EXCH=["Kalshi","Polymarket","Novig","ProphetX","Sporttrade","Betfair","Crypto.com","BetOpenly"];
 var ABBR={DK:"DraftKings",FD:"FanDuel",MGM:"BetMGM",CZR:"Caesars",PIN:"Pinnacle"};
