@@ -173,8 +173,6 @@ function method(){const f=D.meta.fees;return `<div class="grid two"><div class="
  <div class="card" style="margin-top:16px"><div class="card-head"><h2>Data status</h2><span class="sub">${esc(et(D.meta.updated))}</span></div>
  <p>${(D.meta.multi_book||D.meta.odds_api_key)?'<span class="chip b">Multi-book on</span> Prices from several books are included.':'<span class="chip w">Single book</span> Only Book A lines are available right now.'}</p>
  </div>`}
-window.addEventListener('hashchange',route);load();setInterval(load,10*60*1000);
-})();
 
 function edges(){const E=D.e;if(!E)return empty('No edge data yet','Runs after the next multi-book pull.');const L=x=>x.legs.map(l=>`${vchip(l.venue)} ${esc(l.label)} @ ${l.dec}`).join(' + ');
  const c=E.clv||{};
@@ -193,3 +191,5 @@ function bvm(){const G=D.m.games.filter(sf).filter(g=>g.legs);const pay=c=>c?usd
  <div class="card"><div class="table-wrap"><table><tr><th>Outcome</th><th>Best sportsbook</th><th class="num">Wins per $100</th><th>Best exchange (after fee)</th><th class="num">Wins per $100</th><th class="num">Fair prob.</th><th>Pays more</th></tr>
  ${rows.map(r=>`<tr><td><b>${esc(r.g[r.s].full)}</b> to win<div class="small muted">${esc(r.g.away.abbr)} @ ${esc(r.g.home.abbr)} · ${esc(et(r.g.start))}</div></td><td>${r.bk?vchip(r.bk.venue)+' '+(r.bk.dec||'').toString():'—'}</td><td class="num">${pay(r.bk&&r.bk.cost)}</td><td>${r.pm?vchip(r.pm.venue)+' '+Math.round(r.pm.price*100)+'¢ (fee '+((r.pm.cost-r.pm.price)*100).toFixed(2)+'¢)':'—'}</td><td class="num">${pay(r.pm&&r.pm.cost)}</td><td class="num">${r.f!=null?pct(r.f):'—'}</td><td>${vchip(r.win)}</td></tr>`).join('')}</table></div>
  <p class="small muted">Prices as of ${esc(et(D.m.updated))}. ${esc(D.meta.fees.kalshi)} ${esc(D.meta.fees.polymarket)} Cross-venue arbs (book on one side, exchange on the other) are listed in the Arb Scanner with stake splits. Player props: not covered yet (see How it works).</p></div>`}
+window.addEventListener('hashchange',route);load();setInterval(load,10*60*1000);
+})();
