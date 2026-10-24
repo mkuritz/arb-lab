@@ -6,8 +6,8 @@ const S={
  page:'overview',
  sport:ls.get('sport','all'),
  sort:ls.get('sort','profit'),
- bankroll:ls.get('bankroll',1000),
- kelly:ls.get('kelly',0.25),
+ bankroll:+(localStorage.getItem('sl_bankroll')||ls.get('bankroll',1000))||1000,
+ kelly:(()=>{const k=localStorage.getItem('sl_kelly');return k!=null?(k==='flat'?'flat':+k):ls.get('kelly',0.25)})(),
  bank:ls.get('bank',100),
  scanTab:ls.get('scanTab','arbs'),
  edgeTab:ls.get('edgeTab','all'),
@@ -131,10 +131,10 @@ function bankrollBar(){
 
 function bindBankrollBar(){
  const br=$('#gBankroll'),as=$('#gArbStake');
- if(br)br.onchange=e=>{S.bankroll=Math.max(10,+e.target.value||1000);ls.set('bankroll',S.bankroll);route()};
+ if(br)br.onchange=e=>{S.bankroll=Math.max(10,+e.target.value||1000);ls.set('bankroll',S.bankroll);try{localStorage.setItem('sl_bankroll',String(S.bankroll))}catch(err){}route()};
  if(as)as.onchange=e=>{S.bank=Math.max(1,+e.target.value||100);ls.set('bank',S.bank);route()};
  document.querySelectorAll('#gKellySeg [data-kelly]').forEach(b=>b.onclick=()=>{
-  const v=b.dataset.kelly;S.kelly=v==='flat'?'flat':+v;ls.set('kelly',S.kelly);route();
+  const v=b.dataset.kelly;S.kelly=v==='flat'?'flat':+v;ls.set('kelly',S.kelly);try{if(S.kelly!=='flat')localStorage.setItem('sl_kelly',String(S.kelly))}catch(err){}route();
  });
  document.querySelectorAll('[data-hedge-btn]').forEach(b=>b.onclick=()=>{
   const id=b.dataset.hedgeBtn,box=document.getElementById('hbox-'+id);
@@ -221,7 +221,10 @@ function arbCard(a,i,live){
    <div style="margin-top:6px">Leg ${idx+1} Stake: <b class="mono" style="display:inline">${usd(l.stake)}</b> → Payout <b class="mono" style="display:inline">${usd(s.P)}</b></div></div>`).join('')}</div>
   <div class="split-banner">
    <div><b>2-Leg Dollar Split (${usd(T)} total):</b> Leg 1: <b class="mono">${usd(l0.stake)}</b> at ${vchip(l0.venue)} • Leg 2: <b class="mono">${usd(l1.stake)}</b> at ${vchip(l1.venue)} → ${live?`<b class="pos">Estimated +${usd(s.profit)} (${pct(a.profit_pct,2)})</b>`:`<span class="warn">Worst-case ${usd(s.profit)} (${pct(1/a.sum-1,2)} hold)</span>`}</div>
-   <button type="button" class="btn sm" data-hedge-btn="${uid}">⇄ 1-Tap Hedge Calc</button>
+   <div style="display:flex;gap:6px;align-items:center">
+    <button type="button" class="btn sm" data-hedge-btn="${uid}">⇄ 1-Tap Hedge Calc</button>
+    <button type="button" class="sl-tail-btn" data-arb-mid-tail="${esc(m.id||m.game)}" data-arb-mid-mkt="${esc(m.market||'')}">📸 Card</button>
+   </div>
   </div>
   ${hedgeDrawerHtml(uid,l0,l1,l0.stake,l1.stake,s.P,T)}
   ${live?`<div class="range" style="margin-top:10px"><div><small>Total stake</small><b>${usd(T)}</b></div><div><small>Payout either way</small><b>${usd(s.P)}</b></div><div><small>Estimated return</small><b class="pos">${usd(s.profit-s.round)} to ${usd(s.profit)}</b></div>
@@ -425,7 +428,10 @@ function evCard(o){
   ${evVizSvg(o)}
   <div class="split-banner" style="margin-top:8px">
    <div><b>${esc(k.mode)} Sizing (${usd(S.bankroll)} bankroll):</b> Stake <b class="mono pos">${usd(k.stake)}</b> (${pct(k.pct,2)} of bankroll) at ${vchip(o.book)} → Expected Profit <b class="mono pos">+${usd(k.evDollar)}</b> <span class="small muted">(If win: +${usd(k.stake*(1/o.cost-1))})</span></div>
-   <span class="small muted">${o.age_min!=null?`Updated ${Math.round(o.age_min)}m ago`:''}</span>
+   <div style="display:flex;gap:8px;align-items:center">
+    <span class="small muted">${o.age_min!=null?`Updated ${Math.round(o.age_min)}m ago`:''}</span>
+    <button type="button" class="sl-tail-btn" data-arb-ev-tail="${esc((o.game||'')+'|'+(o.label||'')+'|'+(o.book||''))}">📸 Card</button>
+   </div>
   </div>
  </div>`;
 }
@@ -643,5 +649,53 @@ function bvm(){const G=D.m.games.filter(sf).filter(g=>g.legs);const pay=c=>c?usd
  ${rows.map(r=>`<tr><td><b>${esc(r.g[r.s].full)}</b> to win<div class="small muted">${esc(r.g.away.abbr)} @ ${esc(r.g.home.abbr)} · ${esc(et(r.g.start))}</div></td><td>${r.bk?vchip(r.bk.venue)+' '+(r.bk.dec||'').toString():'—'}</td><td class="num">${pay(r.bk&&r.bk.cost)}</td><td>${r.pm?vchip(r.pm.venue)+' '+(r.pm.dec?r.pm.dec+' ('+(r.pm.fee*100).toFixed(0)+'% commission)':Math.round(r.pm.price*100)+'¢ (fee '+((r.pm.cost-r.pm.price)*100).toFixed(2)+'¢)'):'—'}</td><td class="num">${pay(r.pm&&r.pm.cost)}</td><td class="num">${r.f!=null?pct(r.f,1):'—'}</td><td>${vchip(r.win)}</td></tr>`).join('')}</table></div>
  <p class="small muted">Prices as of ${esc(et(D.m.updated))}. Cross-venue arbs and low-hold pairs are listed in the Arb Scanner with stake splits.</p></div>`}
 
+document.addEventListener('click',e=>{
+ const mb=e.target.closest('[data-arb-mid-tail]');
+ if(mb&&window.SLTailCard){
+  e.stopPropagation();
+  const idOrG=mb.getAttribute('data-arb-mid-tail'),mkt=mb.getAttribute('data-arb-mid-mkt');
+  const m=((D.e||{}).middles||[]).find(x=>(x.id===idOrG||x.game===idOrG)&&(!mkt||x.market===mkt))||((D.e||{}).middles||[])[0];
+  if(!m)return;
+  const T=Math.max(1,+S.bank||100),s=split(m,T);
+  const l0=s.legs[0]||{},l1=s.legs[1]||l0;
+  SLTailCard.show({
+   hub:'ARB LAB · MIDDLE SCANNER',
+   title:`${m.game} (${m.market} · ${m.width} pt Middle)`,
+   sub:`Window Hit Prob: ${pct(m.p_window||m.p_hit,1)} · EV: ${(m.ev_pct>=0?'+':'')+pct(m.ev_pct,2)} · Total Stake ${usd(T)}`,
+   accent:'#22d3ee',
+   rows:[
+    {label:`Leg 1: ${l0.label||'Side 1'} (${vname(l0.venue)})`,meta:`Price: ${legPx(l0)} · All-in ${(l0.cost*100).toFixed(1)}¢/$1`,rightTop:`Stake ${usd(l0.stake)}`,rightBot:`Payout ${usd(s.P)}`},
+    {label:`Leg 2: ${l1.label||'Side 2'} (${vname(l1.venue)})`,meta:`Price: ${legPx(l1)} · All-in ${(l1.cost*100).toFixed(1)}¢/$1`,rightTop:`Stake ${usd(l1.stake)}`,rightBot:`Jackpot +${usd(T*(m.best||0))}`}
+   ],
+   footerLeft:`Max Risk: ${usd(T*(m.worst||0))} (${pct(m.worst,2)}) · Double-Win: +${usd(T*(m.best||0))}`,
+   footerRight:'arblab.sportslabshq.com · 21+',
+   filename:`arblab-middle-${(m.game||'game').toLowerCase().replace(/[^a-z0-9]+/g,'-')}.png`
+  });
+  return;
+ }
+ const eb=e.target.closest('[data-arb-ev-tail]');
+ if(eb&&window.SLTailCard){
+  e.stopPropagation();
+  const key=eb.getAttribute('data-arb-ev-tail');
+  const o=((D.e||{}).outliers||[]).find(x=>`${x.game||''}|${x.label||''}|${x.book||''}`===key)||((D.e||{}).outliers||[])[0];
+  if(!o)return;
+  const k=kellyStake(o);
+  SLTailCard.show({
+   hub:'ARB LAB · +EV SCANNER',
+   title:`${o.label} @ ${amer(o.dec)} (${vname(o.book)})`,
+   sub:`${o.game} · ${o.league||o.sport.toUpperCase()} · ${o.market} · +${pct(o.ev,2)} EV`,
+   accent:'#5ed26a',
+   rows:[{
+    label:`${o.label} (${vname(o.book)})`,
+    meta:`Book Implied: ${pct(o.cost||(1/o.dec),1)} vs Sharp Fair: ${pct(o.fair,1)} (${(o.devig_method||'power').toUpperCase()} devig)`,
+    rightTop:`Rec Stake ${usd(k.stake)}`,
+    rightBot:`${k.mode} · +${usd(k.evDollar)} EV`
+   }],
+   footerLeft:`+${pct(o.ev,2)} EV Edge · Fair Odds ${amer(o.fair_dec||(1/o.fair))}`,
+   footerRight:'arblab.sportslabshq.com · 21+',
+   filename:`arblab-ev-${(o.label||'edge').toLowerCase().replace(/[^a-z0-9]+/g,'-')}.png`
+  });
+ }
+});
 window.addEventListener('hashchange',route);load();setInterval(load,10*60*1000);
 })();
