@@ -230,6 +230,142 @@ function arbCard(a,i,live){
  </div>`;
 }
 
+/* ---------- Interactive SVG Middle Number-Line & +EV Consensus Gauge ---------- */
+function middleVizSvg(m,s,T){
+ const l0=s.legs[0]||{},l1=s.legs[1]||l0;
+ const maxRisk=T*(m.worst||0);
+ const jackpot=T*(m.best||0);
+ const pWin=m.p_window||m.p_hit||0;
+ const isTotal=(m.market||'').toLowerCase()==='total';
+ let wLo=0,wHi=1,thLeftLbl='',thRightLbl='',flip=1;
+ const p0=+(l0.point??0),p1=+(l1.point??0);
+ if(isTotal){
+  wLo=Math.min(p0,p1);wHi=Math.max(p0,p1);
+  thLeftLbl='Over '+wLo;thRightLbl='Under '+wHi;
+ }else{
+  const th0=l0.side==='home'?-p0:p0;
+  const th1=l1.side==='home'?-p1:p1;
+  if(th0<=0&&th1<=0)flip=-1;
+  wLo=Math.min(th0*flip,th1*flip);wHi=Math.max(th0*flip,th1*flip);
+  const f0=(wLo>0?'+':'')+wLo,f1=(wHi>0?'+':'')+wHi;
+  thLeftLbl=esc((l0.label||'Leg 1').replace(/\s+[+-]?\d+(\.\d+)?$/,''))+' ('+f0+')';
+  thRightLbl=esc((l1.label||'Leg 2').replace(/\s+[+-]?\d+(\.\d+)?$/,''))+' ('+f1+')';
+ }
+ const hitsSet=new Set((m.hits||[]).map(x=>isTotal?+x:(+x)*flip));
+ const pushSet=new Set((m.push_wins||[]).map(x=>isTotal?+x:(+x)*flip));
+ const isFb=m.sport==='nfl'||m.sport==='ncaaf';
+ const keyNums=new Set([...(m.key_numbers||[]).map(x=>Math.abs(+x)),...(!isTotal&&isFb?[3,7,6,10,14]:[])]);
+ const cMid=(wLo+wHi)/2,cInt=Math.round(cMid);
+ const ticks=[];
+ for(let d=-3;d<=3;d++)ticks.push(cInt+d);
+ const span=Math.max(0.5,wHi-wLo);
+ const xOf=t=>{
+  if(t>=wLo&&t<=wHi){
+   if(Math.abs(wHi-wLo)<1e-6)return 230;
+   return 148+((t-wLo)/span)*164;
+  }
+  if(t<wLo)return Math.max(22,144-(wLo-t)*38);
+  return Math.min(438,316+(t-wHi)*38);
+ };
+ const tickEls=ticks.map(t=>{
+  const x=xOf(t);
+  const inWin=t>=wLo-1e-6&&t<=wHi+1e-6;
+  const isHit=hitsSet.has(t);
+  const isPush=pushSet.has(t)||(inWin&&(Math.abs(t-wLo)<1e-6||Math.abs(t-wHi)<1e-6));
+  const isKey=keyNums.has(Math.abs(t))||(!isTotal&&t===0&&inWin);
+  const tLbl=(!isTotal&&t>0?'+':'')+t;
+  if(inWin||isHit||isPush){
+   const col=isKey?'#f5b942':isHit?'#5ed26a':'#22d3ee';
+   const bg=isKey?'rgba(245,185,66,0.22)':isHit?'rgba(94,210,106,0.24)':'rgba(34,211,238,0.22)';
+   const tag=isKey?`★ ${tLbl}`:tLbl;
+   const pw=Math.max(22,tag.length*6.2+8);
+   return `<g transform="translate(${x.toFixed(1)},58)">
+    <line x1="0" y1="-8" x2="0" y2="-2" stroke="${col}" stroke-width="1.8"/>
+    <circle cx="0" cy="-8" r="3" fill="${col}"/>
+    <rect x="${(-pw/2).toFixed(1)}" y="0" width="${pw.toFixed(1)}" height="14" rx="7" fill="${bg}" stroke="${col}" stroke-width="1.1"/>
+    <text x="0" y="10" text-anchor="middle" font-size="9.2" font-family="ui-monospace,SFMono-Regular,Menlo,monospace" font-weight="800" fill="${col}">${esc(tag)}</text>
+   </g>`;
+  }
+  const nearKey=keyNums.has(Math.abs(t));
+  return `<g transform="translate(${x.toFixed(1)},58)">
+   <line x1="0" y1="-6" x2="0" y2="0" stroke="${nearKey?'#f5b942':'#475569'}" stroke-width="1.2"/>
+   <text x="0" y="10" text-anchor="middle" font-size="8.8" font-family="ui-monospace,SFMono-Regular,Menlo,monospace" font-weight="${nearKey?'700':'500'}" fill="${nearKey?'#fcd34d':'#64748b'}">${nearKey?'★'+tLbl:tLbl}</text>
+  </g>`;
+ }).join('');
+ const wLoStr=(!isTotal&&wLo>0?'+':'')+wLo;
+ const wHiStr=(!isTotal&&wHi>0?'+':'')+wHi;
+ return `<div class="mid-viz" aria-label="Middle number-line and double-win jackpot window">
+  <svg viewBox="0 0 460 74" width="100%" role="img">
+   <defs>
+    <linearGradient id="midJackGrad" x1="0" y1="0" x2="1" y2="0">
+     <stop offset="0%" stop-color="#059669" stop-opacity="0.34"/>
+     <stop offset="50%" stop-color="#10b981" stop-opacity="0.48"/>
+     <stop offset="100%" stop-color="#059669" stop-opacity="0.34"/>
+    </linearGradient>
+    <filter id="midGlow" x="-10%" y="-20%" width="120%" height="140%">
+     <feDropShadow dx="0" dy="0" stdDeviation="2.5" flood-color="#5ed26a" flood-opacity="0.45"/>
+    </filter>
+   </defs>
+   <!-- Left Zone: Leg 1 Win / Leg 2 Loss -->
+   <rect x="6" y="12" width="136" height="36" rx="6" fill="#152235" stroke="#2c3e58" stroke-width="1"/>
+   <text x="74" y="25" text-anchor="middle" font-size="8.8" font-weight="600" fill="#94a3b8">Leg 1 Win / Leg 2 Loss</text>
+   <text x="74" y="39" text-anchor="middle" font-size="10.2" font-family="ui-monospace,SFMono-Regular,Menlo,monospace" font-weight="700" fill="#f5b942">${esc(usd(maxRisk))} (${esc(pct(m.worst,1))})</text>
+   <!-- Center Highlighted Emerald Jackpot Window -->
+   <rect x="146" y="8" width="168" height="42" rx="7" fill="url(#midJackGrad)" stroke="#5ed26a" stroke-width="1.6" filter="url(#midGlow)"/>
+   <text x="230" y="21" text-anchor="middle" font-size="8.8" font-weight="800" letter-spacing="0.04em" fill="#86efac">🎯 DOUBLE-WIN JACKPOT (${esc(wLoStr)} to ${esc(wHiStr)})</text>
+   <text x="230" y="36" text-anchor="middle" font-size="11.2" font-family="ui-monospace,SFMono-Regular,Menlo,monospace" font-weight="800" fill="#ffffff">+${esc(usd(jackpot).replace(/^\+?\$/,'$'))} · Hit Prob: ${esc(pct(pWin,1))}</text>
+   <!-- Right Zone: Leg 2 Win / Leg 1 Loss -->
+   <rect x="318" y="12" width="136" height="36" rx="6" fill="#152235" stroke="#2c3e58" stroke-width="1"/>
+   <text x="386" y="25" text-anchor="middle" font-size="8.8" font-weight="600" fill="#94a3b8">Leg 2 Win / Leg 1 Loss</text>
+   <text x="386" y="39" text-anchor="middle" font-size="10.2" font-family="ui-monospace,SFMono-Regular,Menlo,monospace" font-weight="700" fill="#f5b942">${esc(usd(maxRisk))} (${esc(pct(m.worst,1))})</text>
+   <!-- Number-Line Axis & Boundary Connectors -->
+   <line x1="16" y1="52" x2="444" y2="52" stroke="#334155" stroke-width="1.5"/>
+   <line x1="146" y1="52" x2="314" y2="52" stroke="#5ed26a" stroke-width="2.6"/>
+   <line x1="146" y1="48" x2="146" y2="56" stroke="#22d3ee" stroke-width="2"/>
+   <line x1="314" y1="48" x2="314" y2="56" stroke="#22d3ee" stroke-width="2"/>
+   ${tickEls}
+  </svg>
+ </div>`;
+}
+
+function evVizSvg(o){
+ const bookProb=Math.min(0.95,Math.max(0.05,+(o.cost||(o.dec?1/o.dec:0.5))));
+ const fairProb=Math.min(0.97,Math.max(bookProb+0.005,+(o.fair||bookProb+0.02)));
+ const evPct=+(o.ev||0);
+ const lo=Math.max(0,Math.min(bookProb,fairProb)-0.14);
+ const hi=Math.min(1,Math.max(bookProb,fairProb)+0.10);
+ const rng=Math.max(0.08,hi-lo);
+ const xBook=Math.min(340,Math.max(95,20+((bookProb-lo)/rng)*400));
+ const xFair=Math.min(430,Math.max(xBook+46,20+((fairProb-lo)/rng)*400));
+ const gapW=Math.max(46,xFair-xBook);
+ return `<div class="ev-viz" aria-label="Sharp consensus fair probability versus outlier book implied probability">
+  <svg viewBox="0 0 460 44" width="100%" role="img">
+   <defs>
+    <linearGradient id="evEdgeGrad" x1="0" y1="0" x2="1" y2="0">
+     <stop offset="0%" stop-color="#22d3ee" stop-opacity="0.45"/>
+     <stop offset="100%" stop-color="#5ed26a" stop-opacity="0.85"/>
+    </linearGradient>
+   </defs>
+   <!-- Track background -->
+   <rect x="14" y="18" width="432" height="10" rx="5" fill="#162234" stroke="#283a54" stroke-width="1"/>
+   <!-- Outlier Book implied break-even bar -->
+   <rect x="14" y="18" width="${(xBook-14).toFixed(1)}" height="10" rx="5" fill="#0e7490" opacity="0.75"/>
+   <!-- Green +EV Edge Gap between Book Break-Even and Sharp Fair -->
+   <rect x="${xBook.toFixed(1)}" y="16" width="${gapW.toFixed(1)}" height="14" rx="4" fill="url(#evEdgeGrad)" stroke="#5ed26a" stroke-width="1.3"/>
+   <!-- Book Marker -->
+   <line x1="${xBook.toFixed(1)}" y1="12" x2="${xBook.toFixed(1)}" y2="34" stroke="#22d3ee" stroke-width="2"/>
+   <circle cx="${xBook.toFixed(1)}" cy="23" r="3.2" fill="#22d3ee"/>
+   <text x="${Math.max(54,xBook-4).toFixed(1)}" y="11" text-anchor="end" font-size="9.2" font-family="ui-monospace,SFMono-Regular,Menlo,monospace" font-weight="700" fill="#67e8f9">Book ${esc(pct(bookProb,1))} (${esc(amer(o.dec))})</text>
+   <!-- Sharp Fair Marker -->
+   <line x1="${(xBook+gapW).toFixed(1)}" y1="12" x2="${(xBook+gapW).toFixed(1)}" y2="34" stroke="#5ed26a" stroke-width="2.2"/>
+   <circle cx="${(xBook+gapW).toFixed(1)}" cy="23" r="3.5" fill="#5ed26a"/>
+   <text x="${Math.min(448,xBook+gapW+4).toFixed(1)}" y="11" text-anchor="start" font-size="9.2" font-family="ui-monospace,SFMono-Regular,Menlo,monospace" font-weight="800" fill="#86efac">Fair ${esc(pct(fairProb,1))} (${esc(amer(o.fair_dec||(1/fairProb)))})</text>
+   <!-- Bottom Edge Callout -->
+   <text x="${(xBook+gapW/2).toFixed(1)}" y="41" text-anchor="middle" font-size="9.2" font-family="ui-monospace,SFMono-Regular,Menlo,monospace" font-weight="800" fill="#5ed26a">▲ +${esc(pct(evPct,2))} EV Edge (+${((fairProb-bookProb)*100).toFixed(1)} pts prob gap)</text>
+  </svg>
+ </div>`;
+}
+
 function middleCard(m,i){
  const T=Math.max(1,+S.bank||100),s=split(m,T);
  const l0=s.legs[0],l1=s.legs[1]||s.legs[0];
@@ -241,7 +377,7 @@ function middleCard(m,i){
  const hitsStr=(m.hits&&m.hits.length)?`Both win on ${m.hits.join(', ')}`:'';
  const pushStr=(m.push_wins&&m.push_wins.length)?`${hitsStr?' · ':''}Push+Win (+${usd(s.P-l0.stake)} net) on ${m.push_wins.join(', ')}`:'';
  const keyBadges=(m.key_numbers&&m.key_numbers.length)?`<span class="chip k">Key # ${m.key_numbers.map(k=>Math.abs(k)).join(', ')}</span>`:'';
- return `<div class="arb ${isPosEv?'mid-ev':''}">
+ return `<div class="arb ${isPosEv?'mid-ev':''}"${i<FREE_ARBS?' data-sl-public':''}>
   <div class="arb-top">
    <div>
     <h3>🎯 ${esc(m.game)} <span class="chip b">${esc(m.market)} Middle · ${m.width} pt window</span> ${keyBadges}</h3>
@@ -252,10 +388,11 @@ function middleCard(m,i){
     <div class="small muted">Window Hit: <b>${pct(m.p_window||m.p_hit,1)}</b> · Synthetic Hold: <b>${pct(m.hold_pct!=null?m.hold_pct:(m.sum-1),2)}</b></div>
    </div>
   </div>
-  <div class="legs">
+  <div class="legs"${i<FREE_ARBS?' data-sl-public':''}>
    ${s.legs.map((l,idx)=>`<div class="leg">${vchip(l.venue)} <b>${esc(l.label)}</b><div class="small muted">${esc(legPx(l))} · all-in ${(l.cost*100).toFixed(2)}¢ per $1 payout</div>
     <div style="margin-top:6px">Leg ${idx+1} Stake: <b class="mono" style="display:inline">${usd(l.stake)}</b> → Single-win payout <b class="mono" style="display:inline">${usd(s.P)}</b></div></div>`).join('')}
   </div>
+  ${middleVizSvg(m,s,T)}
   <div class="split-banner">
    <div><b>2-Leg Middle Split (${usd(T)} total):</b> Leg 1: <b class="mono">${usd(l0.stake)}</b> at ${vchip(l0.venue)} • Leg 2: <b class="mono">${usd(l1.stake)}</b> at ${vchip(l1.venue)} → Max Risk <b class="warn">${usd(maxRisk)} (${pct(m.worst,2)})</b> / Middle Jackpot <b class="pos">+${usd(jackpot)} (+${pct(m.best,1)})</b></div>
    <button type="button" class="btn sm" data-hedge-btn="${uid}">⇄ 1-Tap Hedge Calc</button>
@@ -285,6 +422,7 @@ function evCard(o){
     <div class="small muted">Fair: <b>${pct(o.fair,1)} (${amer(o.fair_dec||(1/o.fair))})</b></div>
    </div>
   </div>
+  ${evVizSvg(o)}
   <div class="split-banner" style="margin-top:8px">
    <div><b>${esc(k.mode)} Sizing (${usd(S.bankroll)} bankroll):</b> Stake <b class="mono pos">${usd(k.stake)}</b> (${pct(k.pct,2)} of bankroll) at ${vchip(o.book)} → Expected Profit <b class="mono pos">+${usd(k.evDollar)}</b> <span class="small muted">(If win: +${usd(k.stake*(1/o.cost-1))})</span></div>
    <span class="small muted">${o.age_min!=null?`Updated ${Math.round(o.age_min)}m ago`:''}</span>
