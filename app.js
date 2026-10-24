@@ -377,7 +377,7 @@ function middleCard(m,i){
  const hitsStr=(m.hits&&m.hits.length)?`Both win on ${m.hits.join(', ')}`:'';
  const pushStr=(m.push_wins&&m.push_wins.length)?`${hitsStr?' · ':''}Push+Win (+${usd(s.P-l0.stake)} net) on ${m.push_wins.join(', ')}`:'';
  const keyBadges=(m.key_numbers&&m.key_numbers.length)?`<span class="chip k">Key # ${m.key_numbers.map(k=>Math.abs(k)).join(', ')}</span>`:'';
- return `<div class="arb ${isPosEv?'mid-ev':''}">
+ return `<div class="arb ${isPosEv?'mid-ev':''}"${i<FREE_ARBS?' data-sl-public':''}>
   <div class="arb-top">
    <div>
     <h3>🎯 ${esc(m.game)} <span class="chip b">${esc(m.market)} Middle · ${m.width} pt window</span> ${keyBadges}</h3>
@@ -388,7 +388,7 @@ function middleCard(m,i){
     <div class="small muted">Window Hit: <b>${pct(m.p_window||m.p_hit,1)}</b> · Synthetic Hold: <b>${pct(m.hold_pct!=null?m.hold_pct:(m.sum-1),2)}</b></div>
    </div>
   </div>
-  <div class="legs">
+  <div class="legs"${i<FREE_ARBS?' data-sl-public':''}>
    ${s.legs.map((l,idx)=>`<div class="leg">${vchip(l.venue)} <b>${esc(l.label)}</b><div class="small muted">${esc(legPx(l))} · all-in ${(l.cost*100).toFixed(2)}¢ per $1 payout</div>
     <div style="margin-top:6px">Leg ${idx+1} Stake: <b class="mono" style="display:inline">${usd(l.stake)}</b> → Single-win payout <b class="mono" style="display:inline">${usd(s.P)}</b></div></div>`).join('')}
   </div>
