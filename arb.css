@@ -17,6 +17,7 @@ th.s{cursor:pointer}td.num,th.num{text-align:right}
 .empty b{display:block;color:var(--text-2);margin-bottom:4px;font-size:var(--t-md)}
 .arb{border:1px solid var(--border);border-radius:var(--radius);padding:14px;background:var(--surface);margin-bottom:12px}
 .arb.live{border-color:rgba(94,210,106,.45);box-shadow:0 0 0 1px rgba(94,210,106,.15) inset}
+.arb.mid-ev{border-color:rgba(34,211,238,.4);box-shadow:0 0 0 1px rgba(34,211,238,.12) inset}
 .arb-top{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:baseline}
 .arb-top h3{margin:0;font-size:var(--t-md)}.big{font-family:var(--mono);font-size:22px;font-weight:600}
 .legs{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}.leg{background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px}
@@ -25,7 +26,21 @@ th.s{cursor:pointer}td.num,th.num{text-align:right}
 label.f{display:flex;flex-direction:column;gap:4px;font-size:var(--t-xs);color:var(--text-3)}
 .bar{height:8px;border-radius:4px;background:var(--surface-3);overflow:hidden;position:relative}.bar i{position:absolute;top:0;bottom:0;border-radius:4px}
 .pb{display:grid;grid-template-columns:96px 1fr 52px;gap:8px;align-items:center;font-size:var(--t-xs);margin:3px 0}
-.range{display:flex;gap:8px;flex-wrap:wrap}.range div{flex:1;min-width:140px;background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px}
-.range small{color:var(--text-3);display:block}.range b{font-family:var(--mono);font-size:18px}
+.range{display:flex;gap:8px;flex-wrap:wrap}.range div{flex:1;min-width:130px;background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px}
+.range small{color:var(--text-3);display:block}.range b{font-family:var(--mono);font-size:17px}
 .out{margin-top:12px}
-@media(max-width:960px){.legs{grid-template-columns:1fr}.inp{width:96px}.header-actions .hide-m{display:none}}
+.bk-bar{display:flex;gap:12px;flex-wrap:wrap;align-items:center;justify-content:space-between;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:10px 14px;margin-bottom:12px}
+.bk-group{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.bk-lbl{font-size:var(--t-xs);color:var(--text-3);text-transform:uppercase;letter-spacing:.05em;display:flex;align-items:center;gap:6px}
+.bk-inp{background:var(--bg-2);border:1px solid var(--border-strong);border-radius:var(--radius-sm);padding:5px 8px;width:88px;font-family:var(--mono);font-size:var(--t-sm);color:var(--text)}
+.scan-pills{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;align-items:center}
+.scan-pill{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;border:1px solid var(--border-strong);background:var(--surface);color:var(--text-2);font-size:var(--t-sm);font-weight:500;transition:background .15s,border-color .15s,color .15s}
+.scan-pill:hover{background:var(--surface-2);color:var(--text)}
+.scan-pill[aria-pressed="true"]{background:var(--brand-2);border-color:var(--accent);color:#fff}
+.scan-pill .cnt{font-family:var(--mono);font-size:11px;padding:1px 6px;border-radius:999px;background:rgba(0,0,0,.28);color:inherit}
+.split-banner{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;background:var(--bg-2);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:var(--radius-sm);padding:8px 12px;margin-top:10px;font-size:var(--t-sm)}
+.hedge-box{display:none;background:var(--bg-2);border:1px solid var(--border-strong);border-radius:var(--radius-sm);padding:10px 12px;margin-top:8px}
+.hedge-box.open{display:block}
+.spark{display:inline-flex;align-items:center;gap:5px;vertical-align:middle}
+.spark svg{display:block;overflow:visible}
+@media(max-width:960px){.legs{grid-template-columns:1fr}.inp{width:96px}.header-actions .hide-m{display:none}.bk-bar{padding:10px;gap:8px}.bk-inp{width:78px}.scan-pills{overflow-x:auto;flex-wrap:nowrap;padding-bottom:4px;scrollbar-width:none}.scan-pills::-webkit-scrollbar{display:none}.scan-pill{white-space:nowrap;flex:none;padding:6px 10px;font-size:var(--t-xs)}}
