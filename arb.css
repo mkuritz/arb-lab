@@ -49,9 +49,3 @@ label.f{display:flex;flex-direction:column;gap:4px;font-size:var(--t-xs);color:v
 .mid-viz svg{display:block;width:100%;height:auto}
 .ev-viz{margin:8px 0 6px;background:linear-gradient(180deg,rgba(14,22,34,.9),rgba(10,16,24,.95));border:1px solid rgba(94,210,106,.24);border-radius:var(--radius-sm);padding:7px 10px;overflow:hidden}
 .ev-viz svg{display:block;width:100%;height:auto}
-
-#slbar{position:fixed;bottom:12px;right:14px;padding:6px 12px;font-size:12px;border-radius:99px;background:rgba(15,23,42,.94);border:1px solid #34d399;color:#ecfdf5;z-index:85;box-shadow:0 6px 20px rgba(0,0,0,.5)}
-@media(min-width:1200px){
-  .main > *{max-width:1480px}
-  .legs{gap:14px}
-}
