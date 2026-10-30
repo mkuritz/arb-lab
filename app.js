@@ -23,7 +23,7 @@ const LOGO=`<svg width="30" height="30" viewBox="0 0 34 34"><rect x="1" y="1" wi
 const pct=(x,d=1)=>x==null||isNaN(x)?'—':(x*100).toFixed(d)+'%';
 const usd=x=>x==null||isNaN(x)?'—':(x<0?'-$':'$')+Math.abs(x).toFixed(2);
 const amer=d=>!d?'—':d>=2?'+'+Math.round((d-1)*100):String(Math.round(-100/(d-1)));
-const _et0=s=>{try{return new Date(s).toLocaleString('en-US',{timeZone:'America/New_York',weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})+' ET'}catch(e){return s}};const _etM=new Map();const et=t=>{if(t==null||typeof t==="object")return _et0(t);let v=_etM.get(t);if(v===undefined){v=_et0(t);if(_etM.size>5000)_etM.clear();_etM.set(t,v)}return v};
+const et=s=>{try{return new Date(s).toLocaleString('en-US',{timeZone:'America/New_York',weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})+' ET'}catch(e){return s}};
 const ago=s=>{const m=(Date.now()-new Date(s))/6e4;return m<1?'just now':m<60?Math.round(m)+' min ago':m<1440?(m/60).toFixed(1)+' h ago':Math.round(m/1440)+' d ago'};
 const vname=v=>v;
 const vchip=v=>`<span class="chip ${v==='Exchange A'?'k':v==='Exchange B'?'p':/^Exchange /.test(v||'')?'k':v==='Sharp book'||v==='Book Y'||v==='Book X'||v==='Book M'?'p':'b'}">${esc(vname(v))}</span>`;
@@ -180,7 +180,7 @@ function route(){
  bindBankrollBar();
  (AFTER[S.page]||(()=>{}))();
  document.querySelectorAll('#main [data-sport]').forEach(b=>b.onclick=()=>{S.sport=b.dataset.sport;ls.set('sport',S.sport);route()});
- // #main is rebuilt by shell(), so it already starts at the top (setting scrollTop forced a full sync layout)
+ m.scrollTop=0;
 }
 const AFTER={};
 
@@ -223,7 +223,7 @@ function arbCard(a,i,live){
    <div><b>2-Leg Dollar Split (${usd(T)} total):</b> Leg 1: <b class="mono">${usd(l0.stake)}</b> at ${vchip(l0.venue)} • Leg 2: <b class="mono">${usd(l1.stake)}</b> at ${vchip(l1.venue)} → ${live?`<b class="pos">Estimated +${usd(s.profit)} (${pct(a.profit_pct,2)})</b>`:`<span class="warn">Worst-case ${usd(s.profit)} (${pct(1/a.sum-1,2)} hold)</span>`}</div>
    <div style="display:flex;gap:6px;align-items:center">
     <button type="button" class="btn sm" data-hedge-btn="${uid}">⇄ 1-Tap Hedge Calc</button>
-    <button type="button" class="sl-tail-btn" data-arb-mid-tail="${esc(a.id||a.game)}" data-arb-mid-mkt="${esc(a.market||'')}">📸 Card</button>
+    <button type="button" class="sl-tail-btn" data-arb-mid-tail="${esc(m.id||m.game)}" data-arb-mid-mkt="${esc(m.market||'')}">📸 Card</button>
    </div>
   </div>
   ${hedgeDrawerHtml(uid,l0,l1,l0.stake,l1.stake,s.P,T)}
