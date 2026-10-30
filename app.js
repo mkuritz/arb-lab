@@ -23,7 +23,7 @@ const LOGO=`<svg width="30" height="30" viewBox="0 0 34 34"><rect x="1" y="1" wi
 const pct=(x,d=1)=>x==null||isNaN(x)?'—':(x*100).toFixed(d)+'%';
 const usd=x=>x==null||isNaN(x)?'—':(x<0?'-$':'$')+Math.abs(x).toFixed(2);
 const amer=d=>!d?'—':d>=2?'+'+Math.round((d-1)*100):String(Math.round(-100/(d-1)));
-const et=s=>{try{return new Date(s).toLocaleString('en-US',{timeZone:'America/New_York',weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})+' ET'}catch(e){return s}};
+const _et0=s=>{try{return new Date(s).toLocaleString('en-US',{timeZone:'America/New_York',weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})+' ET'}catch(e){return s}};const _etM=new Map();const et=t=>{if(t==null||typeof t==="object")return _et0(t);let v=_etM.get(t);if(v===undefined){v=_et0(t);if(_etM.size>5000)_etM.clear();_etM.set(t,v)}return v};
 const ago=s=>{const m=(Date.now()-new Date(s))/6e4;return m<1?'just now':m<60?Math.round(m)+' min ago':m<1440?(m/60).toFixed(1)+' h ago':Math.round(m/1440)+' d ago'};
 const vname=v=>v;
 const vchip=v=>`<span class="chip ${v==='Exchange A'?'k':v==='Exchange B'?'p':/^Exchange /.test(v||'')?'k':v==='Sharp book'||v==='Book Y'||v==='Book X'||v==='Book M'?'p':'b'}">${esc(vname(v))}</span>`;
@@ -180,7 +180,7 @@ function route(){
  bindBankrollBar();
  (AFTER[S.page]||(()=>{}))();
  document.querySelectorAll('#main [data-sport]').forEach(b=>b.onclick=()=>{S.sport=b.dataset.sport;ls.set('sport',S.sport);route()});
- m.scrollTop=0;
+ // #main is rebuilt by shell(), so it already starts at the top (setting scrollTop forced a full sync layout)
 }
 const AFTER={};
 
