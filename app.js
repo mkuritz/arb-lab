@@ -223,7 +223,7 @@ function arbCard(a,i,live){
    <div><b>2-Leg Dollar Split (${usd(T)} total):</b> Leg 1: <b class="mono">${usd(l0.stake)}</b> at ${vchip(l0.venue)} • Leg 2: <b class="mono">${usd(l1.stake)}</b> at ${vchip(l1.venue)} → ${live?`<b class="pos">Estimated +${usd(s.profit)} (${pct(a.profit_pct,2)})</b>`:`<span class="warn">Worst-case ${usd(s.profit)} (${pct(1/a.sum-1,2)} hold)</span>`}</div>
    <div style="display:flex;gap:6px;align-items:center">
     <button type="button" class="btn sm" data-hedge-btn="${uid}">⇄ 1-Tap Hedge Calc</button>
-    <button type="button" class="sl-tail-btn" data-arb-mid-tail="${esc(m.id||m.game)}" data-arb-mid-mkt="${esc(m.market||'')}">📸 Card</button>
+    <button type="button" class="sl-tail-btn" data-arb-mid-tail="${esc(a.id||a.game)}" data-arb-mid-mkt="${esc(a.market||'')}">📸 Card</button>
    </div>
   </div>
   ${hedgeDrawerHtml(uid,l0,l1,l0.stake,l1.stake,s.P,T)}
